@@ -19,16 +19,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var divStyle = {
-  width: '32%',
-  height: '800px',
+  width: '300px',
+  height: '680px',
   display: 'inline-block',
   marginRight: '5px'
-
 };
 
 var divStyle_Right = {
-  width: '65%',
-  height: '800px',
+  width: '800px',
+  height: '680px',
   display: 'inline-block',
   marginLeft: '5px'
 };
@@ -49,12 +48,6 @@ var GridMain = function (_Component) {
         'div',
         null,
         _react2.default.createElement('br', null),
-        _react2.default.createElement(
-          'button',
-          { type: 'button', 'class': 'btn btn-primary btn-xs', id: 'btnSearch' },
-          '데이터 조회'
-        ),
-        _react2.default.createElement('br', null),
         _react2.default.createElement('div', { id: 'realgrid', style: divStyle }),
         _react2.default.createElement('div', { id: 'realgrid_Right', style: divStyle_Right })
       );
@@ -65,6 +58,8 @@ var GridMain = function (_Component) {
 }(_react.Component);
 
 ;
+
+/*{ <br/>          <button type="button" class="btn btn-primary btn-xs" id="btnSearch">데이터 조회</button>          }*/
 
 exports.default = GridMain;
 

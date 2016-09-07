@@ -22,9 +22,9 @@ $(document).ready(function () {
 
     //4. API 통해서 DataProvider에 Data 채우기
     //버튼을 클릭하면 Main Data Load.
-    $("#btnSearch").on("click", function () {
-        LoadData();
-    });
+    //$("#btnSearch").on("click", function () {
+    LoadData();
+    //})
 
     //5.GridView Style 적용
     //....요긴 디자인 영역
@@ -36,99 +36,13 @@ $(document).ready(function () {
     setOptions_Detail();
     //******************************//
 
-    //GridView와 연결된 이벤트
-    gridView.onCurrentChanged = function (grid, newIndex) {
-        //var fieldIndex = findField(fields, newIndex.fieldName);
-        /*var fields = dataProvider.getFields();
-        var fieldIndex = findField(fields, "cd_deptemp");
-        dataProvider_Right.clearRows();
-        if (grid.getValue(newIndex.itemIndex, fieldIndex) != undefined && grid.getValue(newIndex.itemIndex, fieldIndex).length == 2)
-        {
-            LoadData_Right(grid.getValue(newIndex.itemIndex, fieldIndex))
-        }
-        else {
-            //SetProviderNewRow(gridView_Right, dataProvider_Right)
-        }*/
-        if (newIndex.fieldName == "yn_disabled") gridView_Right.setFocus();
-    };
-    gridView.onCurrentRowChanged = function (grid, oldRow, newRow) {
-
-        /*var isNew = (newRow < 0) || dpMain.getRowState(newRow) === "created";
-          // 최초 입력시에만 수정가능하도록
-        if (!RealGridJS.isMobile())
-            grid.setColumnProperty("cd_deptemp", "editable", isNew);
-        */
-
-        var fields = dataProvider.getFields();
-        var fieldIndex = findField(fields, "cd_deptemp");
-        dataProvider_Right.clearRows();
-        if (grid.getValue(newRow, fieldIndex) != undefined && grid.getValue(newRow, fieldIndex).length == 2) {
-            LoadData_Right(grid.getValue(newRow, fieldIndex));
-        } else {
-            //SetProviderNewRow(gridView_Right, dataProvider_Right)
-        }
-    };
-
-    //편집이 끝나면 다음 셀로 이동시키기
-    gridView.onCellEdited = function (grid, itemIndex, dataRow, field) {
-        var focusCell = gridView.getCurrent();
-        //focusCell.dataRow = 0;
-        //alert(focusCell.dataRow)
-        if (focusCell.fieldName == "cd_deptemp") {
-            focusCell.column = "nm_deptemp";
-            focusCell.fieldName = "nm_deptemp";
-        } else if (focusCell.fieldName == "nm_deptemp") {
-            focusCell.column = "yn_disabled";
-            focusCell.fieldName = "yn_disabled";
-
-            gridView.commit();
-            InsertDEPT(gridView, dataProvider, itemIndex, dataRow);
-        } else {
-            /*focusCell.dataRow = focusCell.dataRow + 1;
-            focusCell.column = "cd_deptemp";
-            focusCell.fieldName = "cd_deptemp";*/
-            gridView_Right.setFocus();
-        }
-        //포커스된 셀 변경
-        gridView.setCurrent(focusCell);
-    };
-
-    //편집이 끝나면 다음 셀로 이동시키기
-    gridView_Right.onCellEdited = function (grid, itemIndex, dataRow, field) {
-        var focusCell = gridView_Right.getCurrent();
-        //focusCell.dataRow = 0;
-        //alert(focusCell.dataRow)
-        if (focusCell.fieldName == "nm_deptemp") {
-            focusCell.column = "yn_disabled";
-            focusCell.fieldName = "yn_disabled";
-
-            gridView_Right.commit();
-            InsertDEPT(gridView_Right, dataProvider_Right, itemIndex, dataRow);
-        } else if (focusCell.fieldName == "add_saaddr") {
-            focusCell.dataRow = focusCell.dataRow + 1;
-            focusCell.column = "cd_deptemp";
-            focusCell.fieldName = "cd_deptemp";
-        } else {
-            var colNames = gridView_Right.getColumnNames(false);
-            var nextColName = '';
-            for (var i = 0; i < colNames.length; i++) {
-                if (colNames[i] == focusCell.fieldName) {
-                    if (i < colNames.length - 1) {
-                        nextColName = colNames[i + 1];
-                    } else {
-                        nextColName = "cd_deptemp";
-                    }
-                }
-            }
-            focusCell.column = nextColName;
-            focusCell.fieldName = nextColName;
-        }
-        //포커스된 셀 변경
-        gridView_Right.setCurrent(focusCell);
-    };
+    //7. GridView에 대한 이벤트
+    setGridCallbackFunc();
+    setGridCallbackFunc_Right();
     //******************************//
 });
 
+//기본적으로 세팅해야 그리드가 제대로 만들어짐
 function createGrid_Main() {
     var id = "realgrid";
 
@@ -501,874 +415,10 @@ function setColumns_Detail() {
     gridView_Right.setColumns(columns);
 }
 
-function LoadData() {
-    $.ajax({
-        url: "http://localhost:8000/testApp/",
-        contentType: 'application/json',
-        cache: false
-    }).success(function (response) {
-
-        dataProvider.setRows(response.data.data);
-        gridView.setFocus();
-        /*var a = new Array();
-           for(i = 0; i < 1000; i++){
-         for(var ar in response.data.data){
-         a.push(response.data.data[ar])
-         }
-         }
-         dataProvider.setRows(a);*/
-    }).complete(function (response) {
-        SetProviderNewRow(gridView, dataProvider);
-    });
-}
-
-function LoadData_Right(pCdDeptemp) {
-    $.ajax({
-        url: "http://localhost:8000/testApp/" + pCdDeptemp + '/',
-        contentType: 'application/json',
-        cache: false
-    }).success(function (response) {
-        dataProvider_Right.setRows(response.data.data);
-
-        /*var a = new Array();
-           for(i = 0; i < 1000; i++){
-         for(var ar in response.data.data){
-         a.push(response.data.data[ar])
-         }
-         }
-         dataProvider.setRows(a);*/
-    }).complete(function (response, pCdDeptemp) {
-        SetProviderNewRow(gridView_Right, dataProvider_Right);
-    });
-}
-
 function setStyles(grid) {
-    var styles = {
-        "grid": {
-            "paddingRight": "2",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff000000",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "center",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#ffffffff",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "맑은 고딕,12",
-            "border": "#ff313539,1"
-        },
-        "panel": {
-            "borderRight": "#ff777777,1",
-            "paddingRight": "2",
-            "borderBottom": "#ff688caf,1",
-            "iconAlignment": "center",
-            "paddingTop": "4",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "5",
-            "contentFit": "auto",
-            "foreground": "#ff787878",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "near",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "8",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#ffdee2e7",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "돋움,12",
-            "border": "#ff313539,1"
-        },
-        "body": {
-            "borderRight": "#ffdedede,1",
-            "paddingRight": "2",
-            "borderBottom": "#ffdedede,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff666666",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "center",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "line": "#ff808080,1",
-            "selectedBackground": "#ff696969",
-            "background": "#ffffffff",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "돋움,12",
-            "border": "#ff313539,1",
-            "empty": {
-                "borderRight": "#ff999999,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff999999,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffffffff",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ff313539,1"
-            }
-        },
-        "fixed": {
-            "borderRight": "#ff999999,1",
-            "paddingRight": "2",
-            "borderBottom": "#ff999999,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff000000",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "center",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#ffd3d3d3",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "맑은 고딕,12",
-            "border": "#88888888,1",
-            "colBar": {
-                "borderRight": "#ff808080,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff808080,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffffffff",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ff313539,1"
-            },
-            "rowBar": {
-                "borderRight": "#ff999999,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff999999,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffd3d3d3",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#88888888,1"
-            }
-        },
-        "header": {
-            "borderRight": "#ff5d8cc9,1",
-            "paddingRight": "2",
-            "borderBottom": "#ff5d8cc9,1",
-            "borderTop": "#ffffffff,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff002f6e",
-            "hoveredMaskBackground": "linear,#fffff8a9,#ffffd75e,90",
-            "selectedForeground": "#ffff0000",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "linear,#fffff8a9,#ffffd75e,90",
-            "textAlignment": "center",
-            "hoveredForeground": "#ff002f6e",
-            "lineAlignment": "center",
-            "figureBackground": "#ff000000",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#33000000",
-            "background": "linear,#ffe9f0f8,#ffc3d8f1,90",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "맑은 고딕,12,bold",
-            "border": "#ff313539,1",
-            "borderLeft": "#ffffffff,1",
-            "group": {
-                "borderRight": "#ff5d8cc9,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff5d8cc9,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff002f6e",
-                "hoveredMaskBackground": "linear,#fffff8a9,#ffffd75e,90",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "linear,#fffff8a9,#ffffd75e,90",
-                "textAlignment": "center",
-                "hoveredForeground": "#ff222530",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "linear,#ffe9f0f8,#ffc3d8f1,90",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12,bold",
-                "border": "#ff313539,1",
-                "borderLeft": "#ffffffff,1"
-            }
-        },
-        "footer": {
-            "borderRight": "#ff9099a3,1",
-            "paddingRight": "2",
-            "borderTop": "#ff79828b,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "1",
-            "contentFit": "auto",
-            "foreground": "#ff000000",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "near",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#ffdee2e7",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "맑은 고딕,12",
-            "border": "#88888888,1"
-        },
-        "rowGroup": {
-            "header": {
-                "borderRight": "#ff85a8d0,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff85a8d0,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff002f6e",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "near",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffd7e6f7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12,bold",
-                "border": "#ff313539,0",
-                "borderLeft": "#ffffffff,1"
-            },
-            "footer": {
-                "borderRight": "#ffd8e3f0,1",
-                "paddingRight": "2",
-                "borderBottom": "#ffffffff,0",
-                "borderTop": "#ffd8e3f0,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ff9cbade",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12,bold",
-                "border": "#ffffffff,0",
-                "borderLeft": "#ffffffff,0"
-            },
-            "head": {
-                "borderRight": "#ff5d8cc9,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff5d8cc9,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff002f6e",
-                "hoveredMaskBackground": "linear,#fffff8a9,#ffffd75e,90",
-                "selectedForeground": "#ffff0000",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "linear,#fffff8a9,#ffffd75e,90",
-                "textAlignment": "center",
-                "hoveredForeground": "#ff002f6e",
-                "lineAlignment": "center",
-                "figureBackground": "#ff000000",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ffff0000",
-                "background": "linear,#ffe9f0f8,#ffc3d8f1,90",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12,bold",
-                "border": "#ff313539,1",
-                "borderLeft": "#ffffffff,1"
-            },
-            "foot": {
-                "borderRight": "#ff9099a3,1",
-                "borderTop": "#ff79828b,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "1",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "near",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffdee2e7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#88888888,1"
-            },
-            "headerBar": {
-                "borderRight": "#ffffffff,0",
-                "paddingRight": "2",
-                "borderBottom": "#ffffffff,0",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff002f6e",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "near",
-                "lineAlignment": "center",
-                "figureBackground": "#ff498ee1",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffd7e6f7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ffffffff,0",
-                "borderLeft": "#ffffffff,1"
-            },
-            "footerBar": {
-                "borderRight": "#ffd7e6f7,1",
-                "paddingRight": "2",
-                "borderBottom": "#ffffffff,0",
-                "borderTop": "#ffd7e6f7,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "near",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ff9cbade",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ffffffff,0",
-                "borderLeft": "#ffffffff,0"
-            },
-            "bar": {
-                "borderRight": "#ff85a8d0,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff85a8d0,0",
-                "borderTop": "#ffffffff,0",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff002f6e",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "near",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffd7e6f7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ff313539,0",
-                "borderLeft": "#ffffffff,1"
-            },
-            "panel": {
-                "borderRight": "#ff5d8cc9,1",
-                "paddingRight": "1",
-                "borderBottom": "#ff5d8cc9,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "1",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "1",
-                "contentFit": "auto",
-                "foreground": "#ff002f6e",
-                "hoveredMaskBackground": "#fffff5a2",
-                "selectedForeground": "#ffff0000",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#fffff5a2",
-                "textAlignment": "center",
-                "hoveredForeground": "#ff002f6e",
-                "lineAlignment": "center",
-                "figureBackground": "#ff000000",
-                "paddingLeft": "1",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "line": "#ff5d8cc9,1",
-                "selectedBackground": "#ffff0000",
-                "background": "#ffd7e6f7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "돋움,12",
-                "border": "#ff5d8cc9,1",
-                "borderLeft": "#ffffffff,1"
-            }
-        },
-        "indicator": {
-            "borderRight": "#ff93a4b9,1",
-            "paddingRight": "2",
-            "borderBottom": "#ff93a4b9,1",
-            "borderTop": "#ffffffff,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff002f6e",
-            "hoveredMaskBackground": "#fffff0b2",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#fffff0b2",
-            "textAlignment": "center",
-            "hoveredForeground": "#ff002f6e",
-            "lineAlignment": "center",
-            "figureBackground": "#ff1c82ff",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#fffff0b2",
-            "background": "#ffebf3fc",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "돋움,12",
-            "border": "#ff313539,1",
-            "borderLeft": "#ffffffff,1",
-            "head": {
-                "borderRight": "#ff5d8cc9,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff5d8cc9,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "hoveredForeground": "#ffffffff",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "linear,#ffe9f0f8,#ffc3d8f1,90",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ff000000,1",
-                "borderLeft": "#ffffffff,1"
-            },
-            "foot": {
-                "borderRight": "#ff9099a3,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff808080,1",
-                "borderTop": "#ff79828b,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff002f6e",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffdee2e7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#88888888,1",
-                "borderLeft": "#ffffffff,1"
-            }
-        },
-        "checkBar": {
-            "borderRight": "#ffaab1b8,1",
-            "paddingRight": "2",
-            "borderBottom": "#ffaab1b8,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff555555",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "center",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#ffffffff",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "맑은 고딕,12",
-            "border": "#ff313539,1",
-            "head": {
-                "borderRight": "#ff5d8cc9,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff5d8cc9,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "hoveredForeground": "#ffffffff",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "linear,#ffe9f0f8,#ffc3d8f1,90",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ff000000,0",
-                "borderLeft": "#ffffffff,1"
-            },
-            "foot": {
-                "borderRight": "#ff9099a3,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff808080,1",
-                "borderTop": "#ff79828b,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffdee2e7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#88888888,1",
-                "borderLeft": "#ffffffff,1"
-            }
-        },
-        "stateBar": {
-            "borderRight": "#ffaab1b8,1",
-            "paddingRight": "2",
-            "borderBottom": "#ffaab1b8,1",
-            "iconAlignment": "center",
-            "paddingTop": "2",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "2",
-            "contentFit": "auto",
-            "foreground": "#ff000000",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "center",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "2",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#ffffffff",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": "맑은 고딕,12",
-            "border": "#ff313539,1",
-            "head": {
-                "borderRight": "#ff5d8cc9,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff5d8cc9,1",
-                "borderTop": "#ffffffff,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "hoveredForeground": "#ffffffff",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "linear,#ffe9f0f8,#ffc3d8f1,90",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#ff000000,0",
-                "borderLeft": "#ffffffff,1"
-            },
-            "foot": {
-                "borderRight": "#ff9099a3,1",
-                "paddingRight": "2",
-                "borderBottom": "#ff808080,1",
-                "borderTop": "#ff79828b,1",
-                "iconAlignment": "center",
-                "paddingTop": "2",
-                "iconIndex": "0",
-                "iconOffset": "0",
-                "iconLocation": "left",
-                "iconPadding": "0",
-                "paddingBottom": "2",
-                "contentFit": "auto",
-                "foreground": "#ff000000",
-                "hoveredMaskBackground": "#1f5292f7",
-                "selectedForeground": "#ffffffff",
-                "disabledForeground": "#ff808080",
-                "hoveredBackground": "#1f5292f7",
-                "textAlignment": "center",
-                "lineAlignment": "center",
-                "figureBackground": "#ff008800",
-                "paddingLeft": "2",
-                "figureInactiveBackground": "#ffd3d3d3",
-                "selectedBackground": "#ff696969",
-                "background": "#ffdee2e7",
-                "inactiveBackground": "#ffd3d3d3",
-                "font": "맑은 고딕,12",
-                "border": "#88888888,1",
-                "borderLeft": "#ffffffff,1"
-            }
-        },
-        "selection": {
-            "paddingRight": "0",
-            "iconAlignment": "center",
-            "paddingTop": "0",
-            "iconIndex": "0",
-            "iconOffset": "0",
-            "iconLocation": "left",
-            "iconPadding": "0",
-            "paddingBottom": "0",
-            "contentFit": "auto",
-            "foreground": "#ff000000",
-            "hoveredMaskBackground": "#1f5292f7",
-            "selectedForeground": "#ffffffff",
-            "disabledForeground": "#ff808080",
-            "hoveredBackground": "#1f5292f7",
-            "textAlignment": "center",
-            "lineAlignment": "center",
-            "figureBackground": "#ff008800",
-            "paddingLeft": "0",
-            "figureInactiveBackground": "#ffd3d3d3",
-            "selectedBackground": "#ff696969",
-            "background": "#2f1e90ff",
-            "inactiveBackground": "#ffd3d3d3",
-            "font": ",12",
-            "border": "#5f1e90ff,2"
-        }
-    };
-    grid.setStyles(styles);
+
+    //gridViewStyles()는 gridViewStyles.js에 있는 함수임(html에 스트립트 추가함)
+    grid.setStyles(gridViewStyles());
 };
 
 function setOptions_Main() {
@@ -1450,6 +500,133 @@ function setOptions_Detail() {
     });
 };
 
+//API 관련 Method [select, insert, update, delete]
+function LoadData() {
+    $.ajax({
+        url: "http://localhost:8000/testApp/",
+        contentType: 'application/json',
+        cache: false
+    }).success(function (response) {
+
+        dataProvider.setRows(response.data.data);
+        gridView.setFocus();
+        /*var a = new Array();
+           for(i = 0; i < 1000; i++){
+         for(var ar in response.data.data){
+         a.push(response.data.data[ar])
+         }
+         }
+         dataProvider.setRows(a);*/
+    }).complete(function (response) {
+        SetProviderNewRow(gridView, dataProvider);
+    });
+}
+
+function LoadData_Right(pCdDeptemp) {
+    $.ajax({
+        url: "http://localhost:8000/testApp/" + pCdDeptemp + '/',
+        contentType: 'application/json',
+        cache: false
+    }).success(function (response) {
+        dataProvider_Right.setRows(response.data.data);
+    }).complete(function (response, pCdDeptemp) {
+        SetProviderNewRow(gridView_Right, dataProvider_Right);
+    });
+}
+
+// gridview callback method
+function setGridCallbackFunc() {
+    //GridView와 연결된 이벤트
+    gridView.onCurrentChanged = function (grid, newIndex) {
+        //keyDown or KeyPress 이벤트로 옮길까
+        if (newIndex.fieldName == "yn_disabled") gridView_Right.setFocus();
+    };
+
+    gridView.onCurrentRowChanged = function (grid, oldRow, newRow) {
+        // 09.07. 최초 입력시에만 수정가능하도록
+        //var isNew = (newRow < 0) || dataProvider.getRowState(newRow) === "created";
+
+        //if (!RealGridJS.isMobile())
+        //    grid.setColumnProperty("cd_deptemp", "editable", isNew);
+
+        var fields = dataProvider.getFields();
+        var fieldIndex = findField(fields, "cd_deptemp");
+        dataProvider_Right.clearRows();
+        if (grid.getValue(newRow, fieldIndex) != undefined && grid.getValue(newRow, fieldIndex).length == 2) {
+            LoadData_Right(grid.getValue(newRow, fieldIndex));
+        } else {
+            //SetProviderNewRow(gridView_Right, dataProvider_Right)
+        }
+    };
+
+    //편집이 끝나면 다음 셀로 이동시키기
+    gridView.onCellEdited = function (grid, itemIndex, dataRow, field) {
+        var focusCell = gridView.getCurrent();
+        //focusCell.dataRow = 0;
+        //alert(focusCell.dataRow)
+        if (focusCell.fieldName == "cd_deptemp") {
+            focusCell.column = "nm_deptemp";
+            focusCell.fieldName = "nm_deptemp";
+        } else if (focusCell.fieldName == "nm_deptemp") {
+            focusCell.column = "yn_disabled";
+            focusCell.fieldName = "yn_disabled";
+
+            gridView.commit();
+            InsertDEPT(gridView, dataProvider, itemIndex, dataRow);
+        } else {
+            /*focusCell.dataRow = focusCell.dataRow + 1;
+            focusCell.column = "cd_deptemp";
+            focusCell.fieldName = "cd_deptemp";*/
+            gridView_Right.setFocus();
+        }
+        //포커스된 셀 변경
+        gridView.setCurrent(focusCell);
+    };
+}
+
+function setGridCallbackFunc_Right() {
+    gridView_Right.onCurrentRowChanged = function (grid, oldRow, newRow) {}
+    //09.07. 최초 입력시에만 수정가능하도록
+    //var isNew = (newRow < 0) || dataProvider_Right.getRowState(newRow) === "created";
+
+    //if (!RealGridJS.isMobile())
+    //    grid.setColumnProperty("cd_deptemp", "editable", isNew);
+
+    //편집이 끝나면 다음 셀로 이동시키기
+    ;gridView_Right.onCellEdited = function (grid, itemIndex, dataRow, field) {
+        var focusCell = gridView_Right.getCurrent();
+        //focusCell.dataRow = 0;
+        //alert(focusCell.dataRow)
+        if (focusCell.fieldName == "nm_deptemp") {
+            focusCell.column = "yn_disabled";
+            focusCell.fieldName = "yn_disabled";
+
+            gridView_Right.commit();
+            InsertDEPT(gridView_Right, dataProvider_Right, itemIndex, dataRow);
+        } else if (focusCell.fieldName == "add_saaddr") {
+            focusCell.dataRow = focusCell.dataRow + 1;
+            focusCell.column = "cd_deptemp";
+            focusCell.fieldName = "cd_deptemp";
+        } else {
+            var colNames = gridView_Right.getColumnNames(false);
+            var nextColName = '';
+            for (var i = 0; i < colNames.length; i++) {
+                if (colNames[i] == focusCell.fieldName) {
+                    if (i < colNames.length - 1) {
+                        nextColName = colNames[i + 1];
+                    } else {
+                        nextColName = "cd_deptemp";
+                    }
+                }
+            }
+            focusCell.column = nextColName;
+            focusCell.fieldName = nextColName;
+        }
+        //포커스된 셀 변경
+        gridView_Right.setCurrent(focusCell);
+    };
+}
+
 //개발자가 필요에 의해 추가한 이벤트
 function findField(fields, fieldName) {
     for (var i = 0; i < fields.length; i++) {
@@ -1462,7 +639,7 @@ function InsertDEPT(grid, provider, itemIndex, datarow) {
     if (grid.getValues(itemIndex) != undefined) {
         var insertRow = [grid.getValues(itemIndex).cd_deptemp, grid.getValues(itemIndex).nm_deptemp, grid.getValues(itemIndex).yn_disabled == "여" ? 0 : 1];
         provider.insertRow(insertRow);
-        grid.setValue(itemIndex, 'yn_disabled', "");
+        grid.setValue(itemIndex, 'yn_disabled', "여");
         SetProviderNewRow(grid, provider);
     }
 }
