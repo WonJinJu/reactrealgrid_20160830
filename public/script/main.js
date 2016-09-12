@@ -5,7 +5,15 @@ var gridView;
 var dataProvider_Right;
 var gridView_Right;
 
+//편집한 셀을 기록하기 위해 전역으로 하나 만듬
+var dicEditCell;
+var dicEditCell_Right;
+
+
 $(document).ready( function() {
+    //초기화
+    dicEditCell = {};
+
     //1. Grid컨드롤을 화면상에 올리기
     createGrid_Main();
     createGrid_Detail();
@@ -18,26 +26,30 @@ $(document).ready( function() {
     setColumns_Main();
     setColumns_Detail();
 
-    //4. API 통해서 DataProvider에 Data 채우기
-    //버튼을 클릭하면 Main Data Load.
-    //$("#btnSearch").on("click", function () {
-        LoadData();
-    //})
-
-    //5.GridView Style 적용
+    //4.GridView Style 적용
     //....요긴 디자인 영역
-    setStyles(gridView)
-    setStyles(gridView_Right)
+    setStyles(gridView);
+    setStyles(gridView_Right);
 
-    //6. GridView Option 수정
+    //5. GridView Option 수정
     setOptions_Main();
     setOptions_Detail();
     //******************************//
 
-    //7. GridView에 대한 이벤트
+    //6. GridView에 대한 이벤트
     setGridCallbackFunc();
     setGridCallbackFunc_Right();
     //******************************//
+
+    //7. Provider 에 대한 이벤트
+    setProviderCallbackFunc();
+    setProviderCallbackFunc_Right();
+
+    //8. API 통해서 DataProvider에 Data 채우기
+    //버튼을 클릭하면 Main Data Load.
+    //$("#btnSearch").on("click", function () {
+        LoadData();
+    //})
 });
 
 //기본적으로 세팅해야 그리드가 제대로 만들어짐
@@ -526,7 +538,7 @@ function setOptions_Detail() {
         panel: {visible: false},
         indicator: {visible: true},
         checkBar: {visible: false},
-        stateBar: {visible: false}
+        stateBar: {visible: true}
     });
     //열 고정 옵션
     gridView_Right.setFixedOptions({
@@ -539,6 +551,234 @@ function setOptions_Detail() {
         crossWhenExitLast : true //tab/enter 키로 마지막 셀을 벗어날 때 다음 행으로 이동한다.
     })
 };
+
+// gridview callback method
+function setGridCallbackFunc() {
+    //GridView와 연결된 이벤트
+    gridView.onCurrentRowChanged = function (grid, oldRow, newRow) {
+        // 09.07. 최초 입력시에만 수정가능하도록
+        var isNew = (newRow < 0) || dataProvider.getRowState(newRow) === "created";
+
+        if (!RealGridJS.isMobile())
+            grid.setColumnProperty("cd_deptemp", "editable", isNew);
+
+        dataProvider_Right.clearRows();
+        let cdDeptemp= getCdDeptemp();
+        if (cdDeptemp.length > 0) {
+            LoadData_Right(cdDeptemp)
+        }
+        else {
+            //SetProviderNewRow(gridView_Right, dataProvider_Right)
+        }
+        console.log('onCurrentRowChanged')
+    }
+
+    //편집이 끝나면 다음 셀로 이동시키기
+    gridView.onCellEdited = function (grid, itemIndex, dataRow, field) {
+
+        var focusCell = gridView.getCurrent();
+
+        dicEditCell[focusCell.fieldName] = gridView.getValues(itemIndex)[focusCell.fieldName]
+
+        //focusCell.dataRow = 0;
+        //alert(focusCell.dataRow)
+        if (focusCell.fieldName == "cd_deptemp") {
+            focusCell.column = "nm_deptemp";
+            focusCell.fieldName = "nm_deptemp";
+        }
+        else if (focusCell.fieldName == "nm_deptemp") {
+            focusCell.column = "yn_disabled";
+            focusCell.fieldName = "yn_disabled";
+
+            gridView.commit();
+            InsertDEPT(gridView, dataProvider, itemIndex, dataRow);
+        }
+        else {
+            /*focusCell.dataRow = focusCell.dataRow + 1;
+            focusCell.column = "cd_deptemp";
+            focusCell.fieldName = "cd_deptemp";*/
+
+        }
+        //포커스된 셀 변경
+        gridView.setCurrent(focusCell);
+    }
+
+    gridView.onKeyDown = function (grid, key, ctrl, shift, alt){
+
+        //enter(13) or right arrow(39)
+        //참고사이트(입력키에대한 값을 알려줌)
+        //https://www.cambiaresearch.com/articles/15/javascript-char-codes-key-codes
+        if(key === 13 || key === 39){
+            //main grid의 마지막 컬럼에서 엔터나 오른쪽 방향키 입력시 detail grid에 포커스 가도록 수정
+            var focusCell = gridView.getCurrent();
+            if(focusCell.column == "yn_disabled") {
+                   gridView_Right.setFocus();
+            }
+        }
+        console.log('onKeyDown')
+    }
+}
+
+function setGridCallbackFunc_Right() {
+
+    gridView_Right.onCurrentRowChanged = function (grid, oldRow, newRow) {
+
+         //09.07. 최초 입력시에만 수정가능하도록
+         var isNew = (newRow < 0) || dataProvider_Right.getRowState(newRow) === "created";
+
+         if (!RealGridJS.isMobile())
+             grid.setColumnProperty("cd_deptemp", "editable", isNew);
+     };
+    /*gridView_Right.onCurrentRowChanged = function (grid, oldRow, newRow) {
+        // main grid에 정확한 데이터가 없으면 detail 그리드에 입력 불가
+        if (!gridView.isItemEditing()) {
+            var fields = dataProvider.getFields();
+            var fieldIndex = findField(fields, "cd_deptemp");
+            if (gridView.getValue(newRow, fieldIndex) != undefined && gridView.getValue(newRow, fieldIndex).length == 2) {
+                //09.07. 최초 입력시에만 수정가능하도록
+                var isNew = (newRow < 0) || dataProvider_Right.getRowState(newRow) === "created";
+
+                if (!RealGridJS.isMobile())
+                    grid.setColumnProperty("cd_deptemp", "editable", isNew);
+            }
+            else {
+                alert("부서 코드 없음.")
+            }
+        }
+        else {
+            alert("부서 항목이 수정중")
+            return false;
+        }
+    }*/
+    //편집이 끝나면 다음 셀로 이동시키기
+    gridView_Right.onCellEdited = function (grid, itemIndex, dataRow, field) {
+
+        var focusCell = gridView_Right.getCurrent();
+
+        if(focusCell.fieldName == "nm_deptemp" || focusCell.fieldName == "yn_disabled")
+            dicEditCell[focusCell.fieldName] = gridView.getValues(itemIndex)[focusCell.fieldName]
+        else
+            dicEditCell_Right[focusCell.fieldName] = gridView_Right.getValues(itemIndex)[focusCell.fieldName]
+        //focusCell.dataRow = 0;
+        //alert(focusCell.dataRow)
+        if (focusCell.fieldName == "nm_deptemp") {
+            focusCell.column = "yn_disabled";
+            focusCell.fieldName = "yn_disabled";
+
+            gridView_Right.commit();
+            InsertDEPT(gridView_Right, dataProvider_Right, itemIndex, dataRow);
+        }
+        else if (focusCell.fieldName == "add_saaddr") {
+            focusCell.dataRow = focusCell.dataRow + 1;
+            focusCell.column = "cd_deptemp";
+            focusCell.fieldName = "cd_deptemp";
+        }
+        else {
+            let colNames = gridView_Right.getColumnNames(false);
+            let nextColName = '';
+            for (let i = 0; i < colNames.length; i++) {
+                if (colNames[i] == focusCell.fieldName) {
+                    if (i < colNames.length - 1) {
+                        nextColName = colNames[i + 1]
+                    }
+                    else {
+                        nextColName = "cd_deptemp"
+                    }
+                }
+            }
+            focusCell.column = nextColName;
+            focusCell.fieldName = nextColName;
+        }
+        //포커스된 셀 변경
+        gridView_Right.setCurrent(focusCell);
+    }
+
+    // 부서코드가 없을 경우엔 사원 입력 불가 하도록..
+    gridView_Right.onKeyDown = function (grid, key, ctrl, shift, alt) {
+
+        if (getCdDeptemp().length > 0) {
+            return true;
+        }
+        else
+            return false;
+    }
+}
+
+
+// provider callback method
+function setProviderCallbackFunc() {
+    //provider에 연결된 이벤트
+    dataProvider.onRowUpdated = function (provider, row) {
+         //var values = provider.getRow(row);
+        if(Object.keys(dicEditCell).length > 0)
+            callUpdateAPI("")
+    };
+}
+
+function setProviderCallbackFunc_Right() {
+    //provider에 연결된 이벤트
+    dataProvider_Right.onRowUpdated = function (provider, row) {
+
+        let cdEmp = getCdEmp();
+        if(Object.keys(dicEditCell).length > 0)
+            callUpdateAPI(cdEmp);
+        if(Object.keys(dicEditCell_Right).length > 0)
+            callUpdateAPI_Right(cdEmp);
+    };
+}
+
+//개발자가 필요에 의해 추가한 이벤트
+function findField(fields, fieldName) {
+        for (var i = 0; i < fields.length; i++) {
+            if (fields[i].fieldName.toUpperCase() == fieldName.toUpperCase())
+                return i;
+        }
+        return -1;
+    }
+
+function InsertDEPT(grid, provider, itemIndex, datarow) {
+    if (grid.getValues(itemIndex) != undefined && (provider.getRowState(datarow) === "created")) {
+        grid.setValue(itemIndex, 'yn_disabled', "여")
+
+        //Insert 시킬 값 만듬
+        let insertRow = [grid.getValues(itemIndex).cd_deptemp,
+            grid.getValues(itemIndex).nm_deptemp,
+            grid.getValues(itemIndex).yn_disabled == "부" ? 1 : 0];
+
+        //insert API
+        callInsertAPI(grid, provider, itemIndex, datarow, insertRow);
+    }
+}
+
+function SetProviderNewRow(grid, provider) {
+    var row = provider.addRow({yn_disabled : ""});
+    grid.setCurrent({dataRow: row});
+
+}
+
+function getCdDeptemp() {
+    var itemIndex = gridView.getCurrent().itemIndex;
+    var fields = dataProvider.getFields();
+    var fieldIndex = findField(fields, "cd_deptemp");
+    var value = gridView.getValue(itemIndex, fieldIndex);
+
+    if(value != undefined && value.length == 2)
+        return value;
+    else
+        return "";
+}
+
+function getCdEmp() {
+    var itemIndex = gridView_Right.getCurrent().itemIndex;
+    var fields = dataProvider_Right.getFields();
+    var fieldIndex = findField(fields, "cd_deptemp");
+    var value = gridView_Right.getValue(itemIndex, fieldIndex);
+
+    if(value != undefined && value.length == 2)
+        return value;
+    else
+        return "";
+}
 
 //API 관련 Method [select, insert, update, delete]
 function LoadData() {
@@ -579,133 +819,101 @@ function LoadData_Right(pCdDeptemp) {
             });
     }
 
+function callInsertAPI(provider, itemIndex, datarow, pInsertData) {
+    //한번더 검증 & insert api 만들
+    let cdDept = getCdDeptemp();
 
-
-// gridview callback method
-function setGridCallbackFunc() {
-    //GridView와 연결된 이벤트
-    gridView.onCurrentChanged = function (grid, newIndex) {
-         //keyDown or KeyPress 이벤트로 옮길까
-         if(newIndex.fieldName == "yn_disabled")
-            gridView_Right.setFocus();
-    };
-
-    gridView.onCurrentRowChanged = function (grid, oldRow, newRow) {
-        // 09.07. 최초 입력시에만 수정가능하도록
-        //var isNew = (newRow < 0) || dataProvider.getRowState(newRow) === "created";
-
-        //if (!RealGridJS.isMobile())
-        //    grid.setColumnProperty("cd_deptemp", "editable", isNew);
-
-        var fields = dataProvider.getFields();
-        var fieldIndex = findField(fields, "cd_deptemp");
-        dataProvider_Right.clearRows();
-        if (grid.getValue(newRow, fieldIndex) != undefined && grid.getValue(newRow, fieldIndex).length == 2) {
-            LoadData_Right(grid.getValue(newRow, fieldIndex))
+    if(cdDept.length == 2 && pInsertData != undefined && pInsertData.length == 3) {
+        let param = {};
+        let sUrl = "";
+        if(provider == dataProvider) {
+            sUrl = "http://localhost:8000/testApp/";
         }
         else {
-            //SetProviderNewRow(gridView_Right, dataProvider_Right)
+            sUrl = "http://localhost:8000/testApp/" + cdDept + "/";
         }
-    }
 
-    //편집이 끝나면 다음 셀로 이동시키기
-    gridView.onCellEdited = function (grid, itemIndex, dataRow, field) {
-        var focusCell = gridView.getCurrent();
-        //focusCell.dataRow = 0;
-        //alert(focusCell.dataRow)
-        if (focusCell.fieldName == "cd_deptemp") {
-            focusCell.column = "nm_deptemp";
-            focusCell.fieldName = "nm_deptemp";
-        }
-        else if (focusCell.fieldName == "nm_deptemp") {
-            focusCell.column = "yn_disabled";
-            focusCell.fieldName = "yn_disabled";
+        param.cd_deptemp =  pInsertData[0];
+        param.nm_deptemp = pInsertData[1];
+        param.yn_disabled = pInsertData[2] == "여" ? 0 : pInsertData[2] == "부" ? 1 : pInsertData[2];
 
-            gridView.commit();
-            InsertDEPT(gridView, dataProvider, itemIndex, dataRow);
-        }
-        else {
-            /*focusCell.dataRow = focusCell.dataRow + 1;
-            focusCell.column = "cd_deptemp";
-            focusCell.fieldName = "cd_deptemp";*/
-            gridView_Right.setFocus();
-        }
-        //포커스된 셀 변경
-        gridView.setCurrent(focusCell);
-    }
-
-}
-
-function setGridCallbackFunc_Right() {
-    gridView_Right.onCurrentRowChanged = function (grid, oldRow, newRow) {
-        //09.07. 최초 입력시에만 수정가능하도록
-        //var isNew = (newRow < 0) || dataProvider_Right.getRowState(newRow) === "created";
-
-        //if (!RealGridJS.isMobile())
-        //    grid.setColumnProperty("cd_deptemp", "editable", isNew);
-
-    }
-    //편집이 끝나면 다음 셀로 이동시키기
-    gridView_Right.onCellEdited = function (grid, itemIndex, dataRow, field) {
-        var focusCell = gridView_Right.getCurrent();
-        //focusCell.dataRow = 0;
-        //alert(focusCell.dataRow)
-        if (focusCell.fieldName == "nm_deptemp") {
-            focusCell.column = "yn_disabled";
-            focusCell.fieldName = "yn_disabled";
-
-            gridView_Right.commit();
-            InsertDEPT(gridView_Right, dataProvider_Right, itemIndex, dataRow);
-        }
-        else if (focusCell.fieldName == "add_saaddr"){
-            focusCell.dataRow = focusCell.dataRow + 1;
-            focusCell.column = "cd_deptemp";
-            focusCell.fieldName = "cd_deptemp";
-        }
-        else {
-            let colNames = gridView_Right.getColumnNames(false);
-            let nextColName = '';
-            for(let i = 0 ; i <colNames.length; i++){
-                if(colNames[i] == focusCell.fieldName) {
-                    if (i < colNames.length - 1) {
-                        nextColName = colNames[i + 1]
-                    }
-                    else {
-                        nextColName = "cd_deptemp"
-                    }
-                }
-            }
-            focusCell.column = nextColName;
-            focusCell.fieldName = nextColName;
-        }
-        //포커스된 셀 변경
-        gridView_Right.setCurrent(focusCell);
+        $.ajax({
+            url: sUrl,
+            type: "POST",
+            dataType: "json",
+            data: param
+        })
+            .success(function (response) {
+                provider.insertRow(pInsertData);
+                provider.setRowState(datarow, "none", true); //상태변경
+                SetProviderNewRow(grid, provider); //한줄추가
+                gridView_Right.setFocus();
+            })
+            .complete(function (response) {
+                //SetProviderNewRow(gridView, dataProvider)
+            });
     }
 }
 
+function callUpdateAPI(pCdEmp) {
+    //한번더 검증 & insert api 만들
+    let cdDept = getCdDeptemp();
 
+    if(cdDept.length == 2 && dicEditCell != undefined && Object.keys(dicEditCell).length > 0) {
 
-//개발자가 필요에 의해 추가한 이벤트
-function findField(fields, fieldName) {
-        for (var i = 0; i < fields.length; i++) {
-            if (fields[i].fieldName.toUpperCase() == fieldName.toUpperCase())
-                return i;
+        if(pCdEmp.length == 0){
+            cdDept = cdDept + "00"
         }
-        return -1;
-    }
-
-function InsertDEPT(grid, provider, itemIndex, datarow) {
-    if (grid.getValues(itemIndex) != undefined) {
-        let insertRow = [grid.getValues(itemIndex).cd_deptemp,
-            grid.getValues(itemIndex).nm_deptemp,
-            grid.getValues(itemIndex).yn_disabled == "여" ? 0 : 1];
-        provider.insertRow(insertRow);
-        grid.setValue(itemIndex, 'yn_disabled', "여")
-        SetProviderNewRow(grid, provider)
+        else{
+            cdDept = cdDept + pCdEmp;
+        }
+        let param = [];
+        for (let item in dicEditCell){
+            param.push({column : item, value : dicEditCell[item]})
+        }
+        $.ajax({
+            url: "http://localhost:8000/testApp/",
+            type: "PUT",
+            dataType: "json",
+            contentType: 'application/json', //API 에서 param 인식을 위해 필수!
+            data: JSON.stringify({cd_deptemp : cdDept, update : param})
+            //JSON.stringify() : API 에 data를 json 형식으로 전달하기위해 필수
+        })
+            .success(function (response) {
+                dicEditCell = {}
+            })
+            .complete(function (response) {
+               dicEditCell = {}
+            });
     }
 }
 
-function SetProviderNewRow(grid, provider) {
-    var row = provider.addRow({yn_disabled : ""});
-    grid.setCurrent({dataRow: row});
+function callUpdateAPI_Right() {
+    //한번더 검증 & insert api 만들
+    let cdDept = getCdDeptemp();
+    let cdEmp = getCdEmp();
+
+    if(cdDept.length == 2 && cdEmp.length == 2 && dicEditCell_Right != undefined && Object.keys(dicEditCell_Right).length > 0) {
+
+        let param = [];
+        for (let item in dicEditCell_Right){
+            param.push({column : item, value : dicEditCell_Right[item]})
+        }
+        $.ajax({
+            url: "http://localhost:8000/testApp/" + cdDept + "/",
+            type: "PUT",
+            dataType: "json",
+            contentType: 'application/json', //API 에서 param 인식을 위해 필수!
+            data: JSON.stringify({cd_emp : cdEmp, update : param})
+            //JSON.stringify() : API 에 data를 json 형식으로 전달하기위해 필수
+        })
+            .success(function (response) {
+                dicEditCell_Right = {};
+                dicEditCell = {};
+            })
+            .complete(function (response) {
+               dicEditCell_Right = {};
+               dicEditCell = {};
+            });
+    }
 }
