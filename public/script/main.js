@@ -5,6 +5,7 @@ var gridView;
 var dataProvider_Right;
 var gridView_Right;
 
+
 //편집한 셀을 기록하기 위해 전역으로 하나 만듬
 var dicEditCell;
 var dicEditCell_Right;
